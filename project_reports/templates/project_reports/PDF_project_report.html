@@ -1,0 +1,103 @@
+{% extends 'documents/PDF_base.html' %}
+
+{% block content %}
+	<div class="container">
+		<div class="row">
+			<div class="col-xs-8">
+				<div class="row">
+					<div class="col-xs-5">
+						Проект, этап:
+					</div>
+					<div class="col-xs-6">
+						{{ project.name }}{% if project_current_stage %}, этап {{ project_current_stage.stage }}{% endif %}
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-5">
+						Номер заказа:
+					</div>
+					<div class="col-xs-6">
+						{{ project_current_stage.order_number }}
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-5">
+						Заказчик:
+					</div>
+					<div class="col-xs-6">
+						{{ project.customer.name }}
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-5">
+						Ведущий по проекту:
+					</div>
+					<div class="col-xs-6">
+						{% for pu in project.project_user_set.all %}
+							{% if pu.role.show_on_main %}
+								{{ pu.user.user_contact.get_short_name }}<br>
+							{% endif %}
+						{% endfor %}
+					</div>
+				</div>				
+			</div>
+			<div class="col-xs-4">
+				<center>
+					<img src="{{ reg.qrcode.url }}" style="height: 100px; width: 100px">
+					<p style="font-size: 50%"">{{ reg.hash_code }}</p>
+				</center>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-12">
+				<h4><center><strong>Отчет о ходе выполнения проекта от {{ reg.date|date:"d.m.Y" }}</strong></center></h4>
+			</div>
+		</div>
+
+		<table class="table table-bordered table-condensed">
+			<tbody>
+				{% regroup fields by field_type.category as fields_list %}
+
+				{% for cat in fields_list %}
+					<tr>
+						<td colspan="3" class="bg-grayed text-center">
+							<strong>{{ cat.grouper.name }}</strong>
+						</td>
+					</tr>
+					{% for field in cat.list %}						
+						<tr>
+							<td class="
+								{% if field.status == 'OK' %}
+									bg-success
+								{% elif field.status == 'PRC' %}
+									bg-info
+								{% elif field.status == 'MINPR' %}
+									bg-warning
+								{% elif field.status == 'MAJPR' %}
+									bg-danger
+								{% elif field.status == 'NA' %}
+									bg-grayed
+								{% endif %} icon" bgcolor="{{ field.get_status_color }}">
+                                {% if not field.status and field.field_type.has_status %}
+                                    <strong>?</strong>
+                                {% endif %}
+                            </td>
+							<td><strong>{{ field.field_type.name }}</strong></td>
+							<td>{{ field.content|linebreaks }}</td>
+						</tr>
+					{% endfor %}
+				{% endfor %}
+			</tbody>
+		</table>
+			
+		<div class="row">
+			<div class="col-xs-6">
+				{% for role in signee.roles %}
+					{% if forloop.counter > 1 %},&nbsp;{% endif %}{{ role.get_role_name }}
+				{% endfor %}
+			</div>
+			<div class="col-xs-6 text-right">
+				{{ signee.user.user_contact.get_short_name }}
+			</div>
+		</div>
+{% endblock %}

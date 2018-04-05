@@ -1,0 +1,105 @@
+{% extends 'projects/projects_base.html' %}
+
+{% load staticfiles %}
+
+{% block extra_static %}
+	<script type="text/javascript" src="{% static 'js/bootstrap-table-export.min.js' %}"></script>
+	<script type="text/javascript" src="{% static 'js/tableExport.min.js' %}"></script>
+{% endblock %}
+
+{% block title %}
+	Отчет - {{ project.name }}
+{% endblock %}
+
+{% block header %}Отчет о ходе выполнения проекта{% endblock %}
+
+{% block content %}
+	<div class="container">
+		<div class="row">
+			<div class="col-md-12">
+				{% if 'projects_view_report' in perms %}
+					<div id="toolbar">
+						<div class="btn-group">
+							{% if 'projects_edit_report' in perms %}
+								<a href="{% url 'generate_project_report' project=project.eng_name %}" class="btn btn-default">Сформировать отчет</a>
+							{% endif %}
+							<a href="{{ last_report.get_url }}" class="btn btn-default">Последний отчет</a>
+							<a href="{% url 'list_tp_documents' project=project.eng_name category='org_docs' doc_type='org_report' %}" class="btn btn-default">Все отчеты</a>
+						</div>
+					</div>
+					<table id="table"
+						data-toggle="table" 
+						data-search="true" 
+						data-classes="table table-bordered table-condensed" 
+						data-id-field="id"
+						data-show-export="true"
+						data-export-types="['csv', 'excel']"
+						data-toolbar="#toolbar">
+						<thead>
+							<tr>
+								<th data-field="st" class="icon"></th>
+								<th data-field="nm"></th>
+								<th data-field="ct"></th>
+								{% if 'projects_edit_report' in perms %}
+									<th data-field="ed" class=icon></th>
+								{% endif %}
+							</tr>
+						</thead>
+						
+						<tbody>
+							{% regroup report_fields by tp.category as report_fields_list %}
+
+							{% for cat in report_fields_list %}
+								<tr>
+									<td colspan="4" class="bg-grayed text-center">
+										<strong>{{ cat.grouper.name }}</strong>
+									</td>
+								</tr>
+								{% for field in cat.list %}
+									<tr {% if field.field %}id="{{ field.field.id }}"{% endif %}>
+										{% if field.field %}
+											<td class="
+												{% if field.field.status == 'OK' %}
+													bg-success
+												{% elif field.field.status == 'PRC' %}
+													bg-info
+												{% elif field.field.status == 'MINPR' %}
+													bg-warning
+												{% elif field.field.status == 'MAJPR' %}
+													bg-danger
+												{% elif field.field.status == 'NA' %}
+													bg-grayed
+												{% endif %}">
+                                                {% if not field.field.status and field.field.field_type.has_status %}
+                                                    <span class="glyphicon glyphicon-question-sign"></span>
+                                                {% endif %}
+                                            </td>
+										{% else %}
+											<td><span class="glyphicon glyphicon-question-sign"></span></td>
+										{% endif %}
+										<td>{{ field.tp.name }}</td>
+										<td>
+											{{ field.field.content|linebreaks }}
+											{% if field.field.link %}
+												<a href="{{ field.field.link }}">{{ field.field.link_description|default:'Ссылка' }}</a>
+											{% endif %}
+										</td>
+										{% if 'projects_edit_report' in perms %}
+											<td>
+												<a href="{% url 'edit_report_field' project=project.eng_name field_type=field.tp.id %}">
+													<span class="glyphicon glyphicon-edit"></span>
+												</a>
+											</td>
+										{% endif %}
+									</tr>
+								{% endfor %}
+							{% endfor %}
+						</tbody>
+					</table>					
+				{% else %}
+					<h3>У вас нет прав на просмотр данной страницы</h3>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+{% endblock %}

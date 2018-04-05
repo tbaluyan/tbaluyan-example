@@ -1,0 +1,102 @@
+{% extends 'main/base.html' %}
+
+{% load staticfiles %}
+
+{% block extra_static %}
+    <link rel="stylesheet" href="{% static 'css/bootstrap-table-fixed-columns.css' %}">
+	<script type="text/javascript" src="{% static 'js/checkbox-buttons.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/bootstrap-table-fixed-columns.js' %}"></script>
+{% endblock %}
+
+{% block title %}Отчеты{% endblock %}
+
+{% block header %}{% endblock %}
+
+{% block content %}
+	<div class="container">
+		<div class="row">			
+			<div class="col-md-6">
+				<form method="GET" class="form-inline" id="form">
+					<div class="btn-group">
+						<span class="button-checkbox">
+							<button type="submit" class="btn" data-color="primary">Активные</button>
+							<input type="checkbox" class="hidden" name="status" value="ACT" {% if 'ACT' in status %}checked{% endif %} />
+						</span>
+						<span class="button-checkbox">
+					        <button type="submit" class="btn" data-color="primary">Перспективные</button>
+					        <input type="checkbox" class="hidden" name="status" value="FUT" {% if 'FUT' in status %}checked{% endif %} />
+					    </span>
+					    <span class="button-checkbox">
+					        <button type="submit" class="btn" data-color="primary">Архивные</button>
+					        <input type="checkbox" class="hidden" name="status" value="ARCH" {% if 'ARCH' in status %}checked{% endif %} />
+					    </span>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col-md-12">
+				<div id="toolbar">
+					<ul class="nav nav-tabs">
+						<li role="presentation"{% if own_p %}class="active"{% endif %}>
+							<a href="{% url 'own_projects_report' %}">Мои проекты</a>
+						</li>
+						{% for cat in categories %}
+							<li role="presentation"{% if cat == category %}class="active"{% endif %}>
+								<a href="{% url 'projects_report' category=cat.eng_name %}">{{ cat.name }}</a>
+							</li>
+						{% endfor %}
+						<li role="presentation"{% if all_p %}class="active"{% endif %}>
+							<a href="{% url 'all_projects_report' %}">Все</a>
+						</li>
+					</ul>
+				</div>
+				<table id="table"
+                    data-toggle="table"
+                    data-search="true"
+                    data-classes="table table-bordered table-condensed table-hover"
+                    data-sort-name="project"
+                    data-sort-order="asc"
+                    data-toolbar="#toolbar">
+					<thead>
+						<th data-field="project" data-sortable="true">Проект</th>
+                        {% for ft in all_field_types %}
+						    <th data-field="{{ ft.id }}" data-sortable="false" class="small">
+                                {{ ft.name }}
+                            </th>
+						{% endfor %}
+					</thead>
+					<tbody>
+						{% for pf in project_fields %}
+							<tr>
+								<td class="clickable-cell" data-href="{% url 'view_report' project=pf.project.eng_name %}">{{ pf.project.name }}</td>
+                                {% for field in pf.fields %}
+                                    <td class="
+                                        {% if field.status == 'OK' %}
+                                            bg-success
+                                        {% elif field.status == 'PRC' %}
+                                            bg-info
+                                        {% elif field.status == 'MINPR' %}
+                                            bg-warning
+                                        {% elif field.status == 'MAJPR' %}
+                                            bg-danger
+                                        {% elif field.status == 'NA' %}
+                                            bg-grayed
+                                        {% endif %} clickable-cell"
+                                        data-href="{% url 'view_report' project=pf.project.eng_name %}?scroll_to={{ field.id }}">
+                                        {% if not field.status %}
+                                            <span class="glyphicon glyphicon-question-sign"></span>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+							</tr>
+						{% empty %}
+							<tr><td colspan="7"><center>{% if category %}Нет проектов{% else %}Здесь будут показаны только проекты в которых вы участвуете, или проекты, которые были отмечены для наблюдения{% endif %}</center></td></tr>
+						{% endfor %}						
+					</tbody>
+				</table>
+			</div>
+		</div>		
+	</div>
+{% endblock %}
